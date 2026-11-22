@@ -20,7 +20,10 @@
 
 ---
 
+I'm Making this for my RDNA3.5 GPU, So it may not work on others!
+
 ## 🏗️ Architecture Overview
+
 
 Unlike traditional full-system emulators, **ViceWin** operates as a high-level compatibility shim and static/dynamic shader recompiler, translating Xbox Series (`D3D12.X`) calls and native **AMD RDNA2** machine code directly into desktop **Direct3D 12** and **DXIL**.
 
