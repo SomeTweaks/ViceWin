@@ -1,80 +1,78 @@
 <div align="center">
-  
-## 📈 Overall Core Readiness (~85%)
 
-> **Most of the core RDNA2 ➔ DXIL shader compilation pipeline is already implemented in C++20.** Only edge-case loop forms, bindless descriptors, and the initial CMake compilation remain before runtime testing.
+# 🌴 ViceWin
 
-| Subsystem / Layer | Completion | Progress Bar | Current State |
-| :--- | :---: | :--- | :--- |
-| **Shader Container & Unpacker** (`XDAT`/`XBCH`/`FSSM`) | **100%** | `██████████` | Fully implemented (Zlib + bytecode extraction) |
-| **SSA Lifter & Register File** (`SGPR`/`VGPR`/`EXEC`) | **100%** | `██████████` | Fully implemented |
-| **Control Flow Structuring** (Dominators & Loops) | **90%** | `█████████░` | `if/else` & single-exit `while` done; multi-exit loops next |
-| **LDS Memory & Barriers** (`groupshared` 32 KiB) | **90%** | `█████████░` | `ds_read/write` & `s_barrier` implemented |
-| **System Semantics & Wave64** (`SV_*` / SM 6.6) | **95%** | `█████████▓` | VS/PS/CS semantics & `[WaveSize(64)]` done |
-| **DXC Compiler Backend** (`HLSL ➔ DXIL` SM 6.6) | **90%** | `█████████░` | `IDxcCompiler3` integration & shader caching done |
-| **RDNA2 ISA Instruction Coverage** | **75%** | `███████▓░░` | `SOP*`, `VOP*`, `SMEM`, `MUBUF`, `MIMG`, `DS`, `EXP` supported |
-| **D3D12.X Runtime & Root Signature ABI Shim** | **85%** | `████████▓░` | `T#`/`S#` sampler bindings & PSO passthrough implemented |
+**Xbox Series X|S (`Scarlett`) Compatibility Layer & RDNA2 ➔ DXIL Shader Recompiler for Windows**
 
+![Platform](https://shields.io)
+![Target](https://shields.io)
+![Backend](https://shields.io)
+![C++](https://shields.io)
+
+> **Note:** Built and tuned primarily on **AMD RDNA3.5** hardware. YMMV on other GPU architectures.
 
 </div>
 
 ---
 
-I'm Making this for my RDNA3.5 GPU, So it may not work on others!
+## Core Readiness (~92%)
 
-## 🏗️ Architecture Overview
+Most of the `RDNA2 -> SSA -> HLSL -> DXIL` shader translation pipeline and `D3D12.X` runtime shims are written. Currently finalizing edge-case hardware features before running the first full CMake build and runtime tests.
 
+| Subsystem | Progress | Bar | Notes |
+| :--- | :---: | :--- | :--- |
+| **Container Unpacker** (`XDAT`/`XBCH`/`FSSM`) | **100%** | `██████████` | Zlib decompression + RDNA2 bytecode extraction up to `s_endpgm` |
+| **SSA Lifter & Register Tracking** | **100%** | `██████████` | Virtual `SGPR`, `VGPR`, `VCC`, `EXEC`, and `SCC` state tracking |
+| **Control Flow Structuring (CFG)** | **100%** | `██████████` | Dominator / post-dominator loops, `if/else`, and multi-exit loop lowering |
+| **LDS & Atomics** (`groupshared` 64 KiB) | **95%** | `█████████▓` | `ds_read/write`, `ds_add_u32`, `MUBUF` atomics, and `s_barrier` |
+| **System Semantics & Wave64** | **95%** | `█████████▓` | `SV_*` stage mapping + native `[WaveSize(64)]` (SM 6.6) |
+| **Bindless & Root Signature 1.1** | **90%** | `█████████░` | `ResourceDescriptorHeap` direct indexing + `T#`/`S#` sampler ABI |
+| **DXC Compiler Backend** (`HLSL -> DXIL`) | **90%** | `█████████░` | Runtime `IDxcCompiler3` compilation & shader cache key versioning |
+| **RDNA2 ISA Coverage** | **80%** | `████████░░` | `SOP*`, `VOP*`, `SMEM`, `MUBUF`, `MIMG`, `DS`, `EXP` (Mesh/DXR next) |
 
-Unlike traditional full-system emulators, **ViceWin** operates as a high-level compatibility shim and static/dynamic shader recompiler, translating Xbox Series (`D3D12.X`) calls and native **AMD RDNA2** machine code directly into desktop **Direct3D 12** and **DXIL**.
+---
+
+## How It Works
+
+Instead of full-system hardware emulation, **ViceWin** acts as a high-level API shim and static/dynamic shader recompiler. It intercepts `D3D12.X` runtime calls and lifts raw Xbox Series **RDNA2** machine code straight into desktop **Direct3D 12** and **DXIL (Shader Model 6.6)**:
 
 ```text
-┌───────────────────────────┐      ┌──────────────────────────┐      ┌─────────────────────────┐
-│  Xbox Series Container    │      │   ViceWin Shader Lifter  │      │   Windows D3D12 Driver  │
-│  (XDAT / XBCH / FSSM)     │ ───► │  RDNA2 ISA ─► SSA ─► HLSL│ ───► │  DXC (SM 6.6) ─► DXIL   │
-└───────────────────────────┘      └──────────────────────────┘      └─────────────────────────┘
+  Xbox Shader Blob             ViceWin Lifter               Windows D3D12 Driver
+┌──────────────────┐      ┌──────────────────────┐      ┌──────────────────────────┐
+│ XDAT / XBCH      │ ───► │ RDNA2 ISA ─► SSA     │ ───► │ IDxcCompiler3 (SM 6.6)   │
+│ FSSM (Zlib)      │      │ Dominator CFG + HLSL │      │ Signed DXIL ➔ PSO        │
+└──────────────────┘      └──────────────────────┘      └──────────────────────────┘
 ```
 
 ---
 
-## 📊 Implementation Progress & Roadmap
+## Feature Breakdown
 
-### 1. Shader Recompiler (`RDNA2 ISA ➔ SSA ➔ HLSL / DXIL`)
+### Shader Recompiler (`rdna2_lifter` / `shader_ir`)
+- **Containers & Decompression:** Parses `XDAT` / `XBCH` headers, inflates `FSSM` zlib streams, and handles `NOBC` fallback paths.
+- **Structured CFG:** Reconstructs reducible control flow via dominators, post-dominators, and natural loops—supporting nested `if/else`, `while`, and multi-exit loops without ugly `switch` dispatchers.
+- **Memory & Sync:** Translates `SMEM`, `MUBUF`, `MIMG` (`image_load` / `image_sample*`), `DS` (`ds_read/write_b32/b64/b128`), `s_barrier`, and atomic ops (`ds_add_u32`, `MUBUF` atomics).
+- **SM 6.6 Features:** Emits `[WaveSize(64)]` for Wave64 shaders, maps `SV_VertexID` / `SV_Position` / `SV_DispatchThreadID`, and uses `ResourceDescriptorHeap` for bindless indexing.
 
-| Component / Feature | Status | Details |
-| :--- | :---: | :--- |
-| **Container Unpacking (`XDAT` / `XBCH` / `FSSM`)** | ✅ Done | Zlib decompression & raw RDNA2 bytecode extraction up to `s_endpgm` |
-| **RDNA2 ISA Decoder** | 🟡 Partial | Supports `SOP*`, `VOP*`, `SMEM`, `MUBUF`, `MIMG`, `DS`, and `EXP` encodings |
-| **SSA Lifting & Register Tracking** | ✅ Done | Virtual tracking of `SGPR`, `VGPR`, `VCC`, `EXEC`, and `SCC` flags |
-| **Control Flow Graph (CFG)** | ✅ Done | Dominator / post-dominator & natural loop structuring (`if/else`, `while`); single-exit loops supported |
-| **Local Data Share (LDS / `groupshared`)** | ✅ Done | `ds_read/write_b32/b64/b128`, `s_barrier`, and up to 32 KiB `groupshared` emulation |
-| **System Value Semantics (`SV_*`)** | ✅ Done | Stage-specific input register mapping (`SV_VertexID`, `SV_Position`, `SV_DispatchThreadID`, etc.) |
-| **Texture Sampling (`MIMG`)** | 🟡 Partial | `image_load` & `image_sample*` integrated with `T#` / `S#` descriptors |
-| **Wave64 Support** | 🟡 Partial | 64-bit `EXEC`/`VCC` mask handling & `[WaveSize(64)]` (Shader Model 6.6) |
-| **DXC Integration (`HLSL ➔ DXIL`)** | ✅ Done | `IDxcCompiler3` backend compilation (Shader Model 6.6) & updated shader cache versioning |
-| **Multi-Exit Loops & Bindless (SM 6.6)** | ⏳ Planned | Multi-exit loop lowering, `ResourceDescriptorHeap`, and atomic operations |
+### D3D12.X Runtime Shim (`d3d12_xs_shim`)
+- **Root Signatures:** Translates `D3D12XboxCreateRootSignatureEx` with Root Signature 1.1 direct indexing flags and `T#`/`S#` sampler bindings.
+- **PSO Creation:** Passes stage descriptors and compiled DXIL blobs into desktop `ID3D12Device`.
+- **Test Suite:** Includes synthetic unit tests (`test_shader_pipeline.cpp`) covering ISA decoding, CFG, LDS, atomics, and DXC compilation.
 
----
-
-### 2. Graphics & Runtime Shim (`D3D12.X ➔ D3D12`)
-
-| Subsystem | Status | Implementation Notes |
-| :--- | :---: | :--- |
-| **Root Signature ABI** | ✅ Done | Extended `D3D12XboxCreateRootSignatureEx` with `T#` / `S#` sampler bindings |
-| **PSO Creation Shim** | 🟡 Partial | Stage & resource binding passthrough (`d3d12_xs_shim.cpp`), `NOBC` to DXC pipeline |
-| **Synthetic Test Suite** | ✅ Done | Unit tests for ISA decoding, CFG, LDS, and DXC compilation (`test_shader_pipeline.cpp`) |
-| **First Build & Compilation** | ⏳ Pending | Finalizing multi-exit loops & bindless support prior to first full CMake build |
-
-
-## 🛠️ Tech Stack & Dependencies
-
-* **Language:** C++20
-* **Build System:** CMake
-* **Graphics Backend:** Direct3D 12 (Shader Model 6.6)
-* **Compression:** Zlib (for `FSSM` shader stream decompression)
-* **Shader Compiler:** DirectX Shader Compiler (`dxcompiler.dll` / `dxil.dll`)
+### Still To Do
+- [ ] Mesh Shaders (`AS` / `MS` stages, `exp prim*`) & Inline Raytracing (`image_bvh_intersect_ray` ➔ `RayQuery`)
+- [ ] FP16 packed math (`v_pk_*_f16`) & persistent on-disk DXIL cache
+- [ ] First full CMake build & runtime validation against real Xbox Series shader dumps
 
 ---
 
-## ⚠️ Disclaimer
+## Stack
+* **C++20** / **CMake**
+* **Direct3D 12** (Shader Model 6.6)
+* **DirectX Shader Compiler** (`dxcompiler.dll` / `dxil.dll`)
+* **Zlib**
 
-> **ViceWin** is an independent educational and research project focused on graphics architecture, binary translation, and Direct3D 12 interoperability. It does **not** include any copyrighted game files, encryption keys, or proprietary console SDKs.
+---
+
+## Legal
+ViceWin is an independent research project on GPU architectures and shader translation. No copyrighted game assets, keys, or proprietary Microsoft/Xbox SDK files are included in this repository.
