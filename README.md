@@ -15,9 +15,9 @@
 
 ---
 
-## Core Readiness (~95%)
+## Core Readiness (~97%)
 
-The core `RDNA2 -> SSA -> HLSL -> DXIL` shader translation pipeline, persistent caching, and `D3D12.X` runtime shims are implemented. Next up: building the standalone Windows launcher UI/injector before running the first full CMake build.
+The standalone Win32 launcher (`ScarlettX` package-aware host), `RDNA2 -> SSA -> HLSL -> DXIL` shader pipeline, persistent disk cache, and `vicewin.log` diagnostics are in place. Only Mesh Shaders (`AS/MS`), Inline Raytracing (`RayQuery`), and the initial CMake build remain.
 
 | Subsystem | Progress | Bar | Notes |
 | :--- | :---: | :--- | :--- |
@@ -25,44 +25,44 @@ The core `RDNA2 -> SSA -> HLSL -> DXIL` shader translation pipeline, persistent 
 | **SSA Lifter & Register Tracking** | **100%** | `██████████` | Virtual `SGPR`, `VGPR`, `VCC`, `EXEC`, and `SCC` state tracking |
 | **Control Flow Structuring (CFG)** | **100%** | `██████████` | Dominator / post-dominator loops, `if/else`, and multi-exit loop lowering |
 | **DXC Backend & Persistent Cache** | **100%** | `██████████` | Runtime `IDxcCompiler3` (SM 6.6) + on-disk DXIL cache in `LocalAppData` |
+| **Win32 Launcher & Runtime Logger** | **100%** | `██████████` | `MicrosoftGame.Config` root detection, `ScarlettX` host launch, `vicewin.log` |
 | **LDS & Atomics** (`groupshared` 64 KiB) | **95%** | `█████████▓` | `ds_read/write`, `ds_add_u32`, `MUBUF` atomics, and `s_barrier` |
 | **System Semantics & Wave64** | **95%** | `█████████▓` | `SV_*` stage mapping + native `[WaveSize(64)]` (SM 6.6) |
-| **Bindless & Root Signature 1.1** | **90%** | `█████████░` | `ResourceDescriptorHeap` direct indexing + `T#`/`S#` sampler ABI |
-| **RDNA2 ISA Coverage** | **85%** | `████████▓░` | `SOP*`, `VOP*`, `FP16` (`half2`), `SMEM`, `MUBUF`, `MIMG`, `DS`, `EXP` |
+| **Bindless & Upscaler Shim** | **95%** | `█████████▓` | `ResourceDescriptorHeap` indexing, `T#`/`S#` ABI, FidelityFX `FSR 3.1.2` HLE |
+| **RDNA2 ISA Coverage** | **90%** | `█████████░` | `SOP*`, `SOPK`, `VOP*`, `VINTRP`, `FP16` (`half2`), `SMEM`, `MUBUF`, `MIMG`, `DS`, `EXP` |
 
 ---
 
 ## How It Works
 
-Instead of full-system hardware emulation, **ViceWin** acts as a high-level API shim and static/dynamic shader recompiler. It intercepts `D3D12.X` runtime calls and lifts raw Xbox Series **RDNA2** machine code straight into desktop **Direct3D 12** and **DXIL (Shader Model 6.6)**:
+Instead of full-system hardware emulation, **ViceWin** acts as a high-level API shim and static/dynamic shader recompiler. The launcher detects the Xbox package root via `MicrosoftGame.Config`, prepares an isolated runtime directory, and starts `ScarlettX host`—translating `D3D12.X` / `XGameRuntime` calls and raw **RDNA2** machine code straight into desktop **Direct3D 12** and **DXIL (Shader Model 6.6)**:
 
 ```text
-  Xbox Shader Blob             ViceWin Lifter               Windows D3D12 Driver
-┌──────────────────┐      ┌──────────────────────┐      ┌──────────────────────────┐
-│ XDAT / XBCH      │ ───► │ RDNA2 ISA ─► SSA     │ ───► │ IDxcCompiler3 (SM 6.6)   │
-│ FSSM (Zlib)      │      │ Dominator CFG + HLSL │      │ Signed DXIL ➔ PSO        │
-└──────────────────┘      └──────────────────────┘      └──────────────────────────┘
+  Xbox GDK Package             ViceWin Launcher & Lifter          Windows D3D12 Driver
+┌────────────────────┐      ┌──────────────────────────────┐      ┌──────────────────────────┐
+│ MicrosoftGame.Cfg  │ ───► │ ScarlettX Host + vicewin.log │ ───► │ IDxcCompiler3 (SM 6.6)   │
+│ XDAT / XBCH / FSSM │      │ RDNA2 ISA ─► Dominator CFG   │      │ Signed DXIL ➔ PSO        │
+└────────────────────┘      └──────────────────────────────┘      └──────────────────────────┘
 ```
 
 ---
 
 ## Feature Breakdown
 
+### Launcher & Runtime Diagnostics (`main.cpp` / `process_launcher.cpp` / `logger.cpp`)
+- **Non-Destructive Package Launch:** Finds the package root by `MicrosoftGame.Config`, syncs updated runtime binaries into an app-owned directory (leaving original game folders untouched), and spawns `ScarlettX host`.
+- **Display & Upscaler Controls:** Configures resolution, target FPS limiter, V-Sync, and FidelityFX (`FSR 3.1.2` HLE) / Streamline overrides via `vicewin.ini`.
+- **Detailed Logging (`vicewin.log`):** Records launch configs, `XGameRuntime` calls, D3D12/GPU capabilities, DXIL shader compilations, and upscaler HLE status.
+
 ### Shader Recompiler (`rdna2_lifter` / `shader_ir` / `dxil_backend`)
 - **Containers & Decompression:** Parses `XDAT` / `XBCH` headers, inflates `FSSM` zlib streams, and handles `NOBC` fallback paths.
 - **Structured CFG:** Reconstructs reducible control flow via dominators, post-dominators, and natural loops—supporting nested `if/else`, `while`, and multi-exit loops without `switch` dispatchers.
-- **Math, Memory & Sync:** Translates `SMEM`, `MUBUF`, `MIMG` (`image_load` / `image_sample*`), `DS` (`ds_read/write_b32/b64/b128`), `s_barrier`, atomic ops (`ds_add_u32`, `MUBUF` atomics), and native `FP16` packed math (`v_pk_*_f16` ➔ `half2` with `-enable-16bit-types`).
-- **SM 6.6 Features:** Emits `[WaveSize(64)]` for Wave64 shaders, maps `SV_VertexID` / `SV_Position` / `SV_DispatchThreadID`, and uses `ResourceDescriptorHeap` for bindless indexing.
-- **On-Disk Shader Cache:** Caches compiled DXIL blobs under `%LocalAppData%\ViceWin\shader_cache\` keyed by FSSM bytecode hash and lifter version.
-
-### D3D12.X Runtime Shim (`d3d12_xs_shim`)
-- **Root Signatures:** Translates `D3D12XboxCreateRootSignatureEx` with Root Signature 1.1 direct indexing flags and `T#`/`S#` sampler bindings.
-- **PSO Creation:** Passes stage descriptors and compiled DXIL blobs into desktop `ID3D12Device`.
-- **Test Suite:** Includes synthetic unit tests (`test_shader_pipeline.cpp`) covering ISA decoding, CFG, LDS, atomics, native `half2`, and DXC compilation.
+- **Math, Interpolation & Memory:** Translates `SOP*`, `SOPK`, `VOP*`, pixel interpolation (`VINTRP`), native `FP16` packed math (`v_pk_*_f16` ➔ `half2` with `-enable-16bit-types`), `SMEM`, `MUBUF`, `MIMG` (`image_load` / `image_sample*`), `DS` (`ds_read/write_b32/b64/b128`), `s_barrier`, and atomics.
+- **SM 6.6 & On-Disk Cache:** Emits `[WaveSize(64)]`, maps `SV_*` stage inputs, uses `ResourceDescriptorHeap` for bindless indexing, and caches compiled DXIL blobs under `%LocalAppData%\ViceWin\shader_cache\`.
 
 ### Still To Do
-- [x] FP16 packed math (`v_pk_*_f16` ➔ `half2`) & persistent on-disk DXIL cache
-- [ ] Standalone Windows Launcher & DLL Injector (`ViceWin.exe` — resolution, target FPS, V-Sync controls)
+- [x] Standalone Win32 Launcher (`MicrosoftGame.Config` detection, isolated runtime sync, `vicewin.log`)
+- [x] `SOPK`, extended `VOP3`, and pixel interpolation (`VINTRP`) lifting
 - [ ] Mesh Shaders (`AS` / `MS` stages, `exp prim*`) & Inline Raytracing (`image_bvh_intersect_ray` ➔ `RayQuery`)
 - [ ] First full CMake build & runtime validation against real Xbox Series shader dumps
 
