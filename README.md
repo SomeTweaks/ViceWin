@@ -1,5 +1,5 @@
 
-# ViceWin![GTA VI](https://img.shields.io/badge/GTA_VI-Legacy_of_the_South-FFB000?style=for-the-badge)
+# ViceWin🌴
 
 <div align="center">
 
@@ -9,6 +9,8 @@
 ![C++20](https://img.shields.io/badge/Language-C++20-00599C?logo=cplusplus&logoColor=white)
 ![CMake](https://img.shields.io/badge/Build-CMake_3.20+-064F8C?logo=cmake&logoColor=white)
 ![D3D12](https://img.shields.io/badge/Graphics-DirectX_12_SM_6.6-5C2D91)
+![GTA VI](https://img.shields.io/badge/GTA_VI-Legacy_of_the_South-FFB000?style=for-the-badge)
+![Xbox](https://img.shields.io/badge/Xbox-Series_X%7CS-107C10?style=for-the-badge&logo=xbox&logoColor=white)
 
 </div>
 
