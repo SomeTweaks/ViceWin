@@ -1,67 +1,59 @@
-<div align="center">
 
-# 🌴 ViceWin
+🌴 ViceWin
 
-**Xbox Series X|S (`Scarlett`) Compatibility Layer & RDNA2 ➔ DXIL Shader Recompiler for Windows**
+Xbox Series X|S (Scarlett) HLE Compatibility Layer & RDNA2 ➔ DXIL Shader Recompiler for Windows
+• Platform: Windows 11 x64
+• Target Hardware: AMD RDNA 3.5 (with general D3D12 SM 6.6 fallback)
+• Language: C++20 / CMake
+Note: Built and tuned directly on my AMD RDNA 3.5 setup. Works on other DirectX 12 (Shader Model 6.6) GPUs, though performance and behavior may vary.
 
-![Platform](https://shields.io)
-![Target](https://shields.io)
-![Backend](https://shields.io)
-![C++](https://shields.io)
+Why I Built This
 
-> **Note:** Built and tuned primarily on **AMD RDNA3.5** hardware. YMMV on other GPU architectures.
-
-</div>
+I started ViceWin with a single goal: get next-gen Xbox Series X (Scarlett / Gen9 Game Core) builds running natively on Windows 11 without heavy full-system hardware emulation.
+Instead of emulating the whole console from scratch, ViceWin acts as a lightweight, native Win32 translation layer (similar in spirit to Wine/Proton) paired with a live RDNA2 ➔ DXIL (SM 6.6) shader recompiler. It maps the console PE64 executable directly into host memory, catches Xbox-specific OS, memory, audio, and d3d12_xs calls on the fly, and translates them straight into desktop Windows 11 / DirectX 12 calls.
 
 ![ViceWin Telemetry Status](status.png)
 
-## How It Works
 
-Instead of full-system hardware emulation, **ViceWin** acts as a native Win32-backed HLE compatibility layer and static/dynamic shader recompiler. The launcher detects the Xbox package root via `MicrosoftGame.Config`, prepares an isolated runtime directory, and starts `ScarlettX host`—mapping PE64 imports directly to real Windows 11 APIs and lifting raw **RDNA2** machine code into desktop **Direct3D 12** and **DXIL (Shader Model 6.6)**:
+Bring-Up & Telemetry Status
 
-```text
-  Xbox GDK Package             ViceWin Host & HLE Layer           Windows 11 / D3D12
+
+How It Works
+
+  Xbox GDK Package             ViceWin Host & HLE Layer            Windows 11 / D3D12
 ┌────────────────────┐      ┌──────────────────────────────┐      ┌──────────────────────────┐
 │ MicrosoftGame.Cfg  │ ───► │ PE64 Mapper (TLS + .pdata)   │ ───► │ Win32 / XAudio2 / XInput │
-│ XDAT / XBCH / FSSM │      │ RDNA2 ISA ─► Dominator CFG   │      │ IDxcCompiler3 (SM 6.6)   │
+│ game_scarlett.exe  │ ───► │ Module-Agnostic HLE + VEH    │ ───► │ XMem 13.5 GiB Sanitizer  │
+│ XDAT / XBCH / FSSM │ ───► │ RDNA2 ISA ─► SSA ─► HLSL 6.6 │ ───► │ IDxcCompiler3 + DXIL Cache │
 └────────────────────┘      └──────────────────────────────┘      └──────────────────────────┘
-```
 
----
+Building & Running
 
-## Feature Breakdown
 
-### Launcher, PE64 Loader & Diagnostics (`main.cpp` / `pe_mapper.cpp` / `logger.cpp`)
-- **Non-Destructive Package Launch:** Finds the package root via `MicrosoftGame.Config`, syncs updated binaries into an app-owned directory (leaving original game folders untouched), and spawns `ScarlettX host`.
-- **Full PE64 Initialization:** Handles `IMAGE_DIRECTORY_ENTRY_TLS` callbacks prior to entry point, registers x64 `.pdata` exception tables via `RtlAddFunctionTable`, enforces section page protections, and resolves imports strictly via explicit `.def` tables without fake `stub_thunk` fallbacks.
-- **Diagnostics & Offline Shader Validator:** Writes detailed runtime traces to `vicewin.log` and includes `vicewin_dump_tester.exe` to batch-validate `XDAT`/`XBCH` shader archives on disk.
+Requirements
 
-### Shader Recompiler (`rdna2_lifter` / `shader_ir` / `dxil_backend`)
-- **Structured CFG & Next-Gen Pipelines:** Reconstructs reducible control flow via dominators and natural loops (`if/else`, `while`, multi-exit loops), supports Amplification/Mesh shaders (`AS`/`MS`), and preserves AMD per-node BVH ray-intersection semantics.
-- **Math, Interpolation & Memory:** Translates `SOP*`, `SOPK`, `VOP*`, pixel interpolation (`VINTRP`), native `FP16` packed math (`v_pk_*_f16` ➔ `half2` with `-enable-16bit-types`), `SMEM`, `MUBUF`, `MIMG`, `DS` (`groupshared` up to 64 KiB), `s_barrier`, and atomics.
-- **SM 6.6 & On-Disk Cache:** Emits `[WaveSize(64)]`, maps `SV_*` stage inputs, parses Root Signature v1.0/1.1 bindless flags (`ResourceDescriptorHeap`), and caches compiled DXIL blobs under `%LocalAppData%\ViceWin\shader_cache\`.
+• OS: Windows 11 x64
+• Compiler & Build: MSVC 2022 (C++20) + CMake 3.20+
+• Graphics: DirectX 12 GPU with Shader Model 6.6 support + Windows SDK (dxcompiler.dll / dxil.dll)
 
-### Win32-Backed System HLE (`kernelx` / `xgameruntime` / `dstorage_xs` / `xcrdapi`)
-- **Memory & Threading:** Implements 64 KiB-aligned `XMem` allocation with a 13.5 GiB title memory profile and virtual 8-core / 16-thread Xbox Series CPU affinity mapping.
-- **Storage & Decompression:** Provides `DirectStorage` COM queues and real Zlib / raw-DEFLATE stream decompression via `xcrdapi`.
-- **Audio, Input, Saves & Media:** Routes `XAudio2` / `AcpHal` to `XAudio2_9.dll`, `GameInput` (including rumble) to `XInput1_4.dll`, `Media Foundation` to `System32`, `XNetworking` to `iphlpapi`, and `XGameSave` containers to `%LocalAppData%\ViceWin\saves\`.
+Compile & Run Tests
 
-### Milestones
-- [x] Core RDNA2 ➔ SSA ➔ HLSL ➔ DXIL (SM 6.6) lifter, Mesh Shaders (`AS`/`MS`), BVH decoding & disk cache
-- [x] Standalone Win32 Launcher (`MicrosoftGame.Config` detection, isolated runtime sync, `vicewin.log`)
-- [x] Zero-stub PE64 Loader (TLS, `.pdata`, `.def` exports) & Win32-backed HLE (`XMem`, `DirectStorage`, `XAudio2`, `GameInput`, `XGameSave`)
-- [ ] First full CMake build & unit test suite execution
-- [ ] Offline shader cache pre-warming via `vicewin_dump_tester.exe` & live runtime validation
+powershell
+cmake -S . -B build
+cmake --build build --config Release
+ctest --test-dir build --output-on-failure
+Будьте обачні, використовуючи код.
 
----
+Launch a Package
 
-## Stack
-* **C++20** / **CMake**
-* **Direct3D 12** (Shader Model 6.6)
-* **DirectX Shader Compiler** (`dxcompiler.dll` / `dxil.dll`)
-* **Win32 API / XInput / XAudio2 / Media Foundation / Zlib**
+1. Open build\Release\vicewin.exe (or run scarlettx_host.exe --in-process <path-to-exe>).
+2. Point it to your extracted package folder containing MicrosoftGame.Config and the .exe.
+3. Runtime logs and crash/IAT traces are written automatically to vicewin.log.
 
----
+Credits & Acknowledgements
 
-## Legal
-ViceWin is an independent research project on GPU architectures and binary/shader translation. No copyrighted game assets, keys, or proprietary Microsoft/Xbox SDK files are included in this repository.
+• The initial HLE runtime scaffolding, PE64 loader foundation, and Win32 GDK shim architecture were adapted from Freminet/ScarlettX — huge thanks to Freminet for the clean-room Xbox Series X|S base that made this project possible.
+
+Legal
+
+ViceWin is an independent, non-commercial research project exploring GPU architectures and binary/shader translation. This repository contains zero copyrighted game files, decryption keys, or proprietary Microsoft/Xbox SDK binaries.
