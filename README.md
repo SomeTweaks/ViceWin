@@ -18,14 +18,30 @@ Instead of emulating the whole console from scratch, ViceWin acts as a lightweig
 Bring-Up & Telemetry Status
 
 
-How It Works
+## How It Works
 
-  Xbox GDK Package             ViceWin Host & HLE Layer            Windows 11 / D3D12
-┌────────────────────┐      ┌──────────────────────────────┐      ┌──────────────────────────┐
-│ MicrosoftGame.Cfg  │ ───► │ PE64 Mapper (TLS + .pdata)   │ ───► │ Win32 / XAudio2 / XInput │
-│ game_scarlett.exe  │ ───► │ Module-Agnostic HLE + VEH    │ ───► │ XMem 13.5 GiB Sanitizer  │
-│ XDAT / XBCH / FSSM │ ───► │ RDNA2 ISA ─► SSA ─► HLSL 6.6 │ ───► │ IDxcCompiler3 + DXIL Cache │
-└────────────────────┘      └──────────────────────────────┘      └──────────────────────────┘
+```mermaid
+flowchart LR
+    subgraph PKG["📦 Xbox GDK Package"]
+        A1["MicrosoftGame.Config"]
+        A2["game_scarlett.exe"]
+        A3["XDAT / XBCH / FSSM"]
+    end
+
+    subgraph HOST["⚙️ ViceWin Host & HLE Layer"]
+        B1["PE64 Mapper (TLS + .pdata)"]
+        B2["Module-Agnostic HLE + VEH"]
+        B3["RDNA2 ISA ➔ SSA ➔ HLSL 6.6"]
+    end
+
+    subgraph WIN["🪟 Windows 11 / D3D12"]
+        C1["Win32 / XAudio2 / XInput"]
+        C2["XMem 13.5 GiB Sanitizer"]
+        C3["IDxcCompiler3 + DXIL Cache"]
+    end
+
+    PKG ==> HOST ==> WIN
+```
 
 Building & Running
 
