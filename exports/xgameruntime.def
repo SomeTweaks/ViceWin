@@ -1,0 +1,39 @@
+LIBRARY xgameruntime
+EXPORTS
+    ; Name exports only; no verified xgameruntime ordinal map is available.
+    XNetworkingGetConnectivityHint
+    XMemGetAllocationStatistics
+    ; xmem.dll surface: the retail dump imports these names from xmem.dll and the
+    ; in-process loader redirects that module here.
+    XMemAlloc
+    XMemFree
+    XMemAllocDefault
+    XMemFreeDefault
+    XMemAllocatePhysicalPages
+    XMemFreePhysicalPages
+    XMemMapPhysicalPages
+    XMemMapPhysicalPagesScatter
+    XMemTransferMemory
+    XMemVirtualAlloc
+    XMemGetWorkingSetStatistics
+    XMemIsToolsMemAvailable
+    XGameSaveInitializeProvider
+    XGameSaveInitializeProviderAsync
+    XGameSaveInitializeProviderResult
+    XGameSaveCloseProvider
+    XGameSaveGetRemainingQuota
+    XGameSaveCreateContainer
+    XGameSaveCloseContainer
+    XGameSaveDeleteContainer
+    XGameSaveEnumerateContainerInfo
+    XGameSaveCreateUpdate
+    XGameSaveCloseUpdate
+    XGameSaveSubmitBlobWrite
+    XGameSaveSubmitBlobDelete
+    XGameSaveSubmitUpdate
+    XGameSaveSubmitUpdateAsync
+    XGameSaveSubmitUpdateResult
+    XGameSaveReadBlobData
+    XGameSaveReadBlobDataAsync
+    XGameSaveReadBlobDataResult
+    XGameSaveEnumerateBlobInfo

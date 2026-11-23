@@ -1,0 +1,8 @@
+LIBRARY chad
+EXPORTS
+    ; Xbox audio DSP surface imported by the retail title. Name exports only.
+    XDspActivate
+    XDspDeactivate
+    XDspConnectWithMaximumStreamLimit
+    XDspDisconnect
+    XDspSubmitCommand

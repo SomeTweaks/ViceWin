@@ -1,0 +1,9 @@
+LIBRARY xcrdapi
+EXPORTS
+    ; DStorageGetFactory ordinal 1 is confirmed by the donor export manifest.
+    ; XDecompress* ordinal assignments are intentionally not guessed.
+    DStorageGetFactory @1
+    DStorageSetConfiguration
+    XDecompressCreate
+    XDecompress
+    XDecompressDestroy

@@ -1,0 +1,4 @@
+LIBRARY kernelx.dll
+EXPORTS
+    KernelxMissingForTest
+    KernelxOrdinalMissing @42 NONAME

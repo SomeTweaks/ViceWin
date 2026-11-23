@@ -1,0 +1,17 @@
+LIBRARY d3d12_xs
+EXPORTS
+    D3D12ZeroMemoryX @1
+    GetFrameBufferPreserveMemorySizeBytes @2
+    D3D12ConfigureVirtualMemoryX @5
+    D3D12CreateDevice=ViceWin_D3D12CreateDevice @6
+    D3D12CreateRootSignatureDeserializer=ViceWin_D3D12CreateRootSignatureDeserializer @7
+    D3D12CreateVersionedRootSignatureDeserializer=ViceWin_D3D12CreateVersionedRootSignatureDeserializer @8
+    D3D12GetDebugInterface=ViceWin_D3D12GetDebugInterface @9
+    D3D12SerializeRootSignature=ViceWin_D3D12SerializeRootSignature @10
+    D3D12SerializeVersionedRootSignature=ViceWin_D3D12SerializeVersionedRootSignature @11
+    D3D12UploadCustomMicrocodeX @12
+    D3D12XboxCreateDevice @13
+    D3D12XboxGetProcessDebugFlags @15
+    D3D12XboxSetProcessDebugFlags @16
+    D3DFlushEntireCpuCache @18
+    IID_ID3D12Device=ViceWin_IID_ID3D12Device @28 DATA

@@ -1,0 +1,5 @@
+LIBRARY dstorage_xs
+EXPORTS
+    ; Keep these exports name-addressable; no module-specific ordinal map is verified.
+    DStorageGetFactory
+    DStorageSetConfiguration
