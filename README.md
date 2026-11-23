@@ -1,5 +1,5 @@
 
-# ViceWin🌴
+# ViceWin![GTA VI](https://img.shields.io/badge/GTA_VI-Legacy_of_the_South-FFB000?style=for-the-badge)
 
 <div align="center">
 
