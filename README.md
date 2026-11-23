@@ -1,75 +1,135 @@
 
-🌴 ViceWin
+# ViceWin
 
-Xbox Series X|S (Scarlett) HLE Compatibility Layer & RDNA2 ➔ DXIL Shader Recompiler for Windows
-• Platform: Windows 11 x64
-• Target Hardware: AMD RDNA 3.5 (with general D3D12 SM 6.6 fallback)
-• Language: C++20 / CMake
-Note: Built and tuned directly on my AMD RDNA 3.5 setup. Works on other DirectX 12 (Shader Model 6.6) GPUs, though performance and behavior may vary.
+<div align="center">
 
-Why I Built This
+**Xbox Series X|S HLE compatibility layer and RDNA2 to DXIL shader recompiler for Windows**
 
-I started ViceWin with a single goal: get next-gen Xbox Series X (Scarlett / Gen9 Game Core) builds running natively on Windows 11 without heavy full-system hardware emulation.
-Instead of emulating the whole console from scratch, ViceWin acts as a lightweight, native Win32 translation layer (similar in spirit to Wine/Proton) paired with a live RDNA2 ➔ DXIL (SM 6.6) shader recompiler. It maps the console PE64 executable directly into host memory, catches Xbox-specific OS, memory, audio, and d3d12_xs calls on the fly, and translates them straight into desktop Windows 11 / DirectX 12 calls.
+![Windows](https://img.shields.io/badge/Platform-Windows_11_x64-0078D4?logo=windows&logoColor=white)
+![C++20](https://img.shields.io/badge/Language-C++20-00599C?logo=cplusplus&logoColor=white)
+![CMake](https://img.shields.io/badge/Build-CMake_3.20+-064F8C?logo=cmake&logoColor=white)
+![D3D12](https://img.shields.io/badge/Graphics-DirectX_12_SM_6.6-5C2D91)
 
-![ViceWin Telemetry Status](status.png)
+</div>
 
+ViceWin is a native Windows compatibility layer for Xbox Series X|S builds. It focuses on
+translation and high-level emulation instead of full-system hardware emulation.
 
-Bring-Up & Telemetry Status
+The runtime maps Scarlett PE64 executables into host memory, intercepts Xbox-specific calls,
+and translates console APIs and shaders into native Win32, DirectX 12, and Shader Model 6.6
+interfaces.
 
+> [!NOTE]
+> ViceWin is developed and tuned primarily on AMD RDNA 3.5 hardware. Other DirectX 12
+> Shader Model 6.6 GPUs may work, but performance and behavior can vary.
 
-## How It Works
+---
+
+## Bring-up and telemetry
+
+<div align="center">
+
+![ViceWin telemetry status](status.png)
+
+</div>
+
+---
+
+## Highlights
+
+- **Native PE64 loading** — maps Scarlett executables with TLS and `.pdata` support
+- **High-level emulation** — Win32, audio, input, memory, and D3D12 compatibility layers
+- **Shader translation** — RDNA2 ISA to SSA to HLSL/DXIL Shader Model 6.6
+- **Runtime tracing** — automatic logging, crash reporting, and IAT traces
+- **DXC integration** — DirectX Shader Compiler with DXIL caching
+- **Lightweight architecture** — no heavy hardware emulation or proprietary game data
+
+---
+
+## How it works
 
 ```mermaid
 flowchart LR
-    subgraph PKG["📦 Xbox GDK Package"]
+    subgraph Package["Xbox GDK package"]
         A1["MicrosoftGame.Config"]
         A2["game_scarlett.exe"]
         A3["XDAT / XBCH / FSSM"]
     end
 
-    subgraph HOST["⚙️ ViceWin Host & HLE Layer"]
-        B1["PE64 Mapper (TLS + .pdata)"]
-        B2["Module-Agnostic HLE + VEH"]
-        B3["RDNA2 ISA ➔ SSA ➔ HLSL 6.6"]
+    subgraph ViceWin["ViceWin host"]
+        B1["PE64 mapper"]
+        B2["HLE runtime + VEH"]
+        B3["RDNA2 → DXIL"]
     end
 
-    subgraph WIN["🪟 Windows 11 / D3D12"]
+    subgraph Windows["Windows 11"]
         C1["Win32 / XAudio2 / XInput"]
-        C2["XMem 13.5 GiB Sanitizer"]
-        C3["IDxcCompiler3 + DXIL Cache"]
+        C2["Memory compatibility"]
+        C3["IDxcCompiler3 + DXIL cache"]
     end
 
-    PKG ==> HOST ==> WIN
+    Package ==> ViceWin ==> Windows
 ```
 
-Building & Running
+---
 
+## Requirements
 
-Requirements
+| Component | Requirement |
+| --- | --- |
+| Operating system | Windows 11 x64 |
+| Compiler | Microsoft Visual C++ 2022 |
+| Language standard | C++20 |
+| Build system | CMake 3.20 or newer |
+| Graphics | DirectX 12 GPU with Shader Model 6.6 support |
+| Windows SDK | `dxcompiler.dll` and `dxil.dll` |
 
-• OS: Windows 11 x64
-• Compiler & Build: MSVC 2022 (C++20) + CMake 3.20+
-• Graphics: DirectX 12 GPU with Shader Model 6.6 support + Windows SDK (dxcompiler.dll / dxil.dll)
+---
 
-Compile & Run Tests
+## Build
 
-powershell
+```powershell
 cmake -S . -B build
 cmake --build build --config Release
+```
+
+## Run tests
+
+```powershell
 ctest --test-dir build --output-on-failure
-Будьте обачні, використовуючи код.
+```
 
-Launch a Package
+---
 
-1. Open build\Release\vicewin.exe (or run scarlettx_host.exe --in-process <path-to-exe>).
-2. Point it to your extracted package folder containing MicrosoftGame.Config and the .exe.
-3. Runtime logs and crash/IAT traces are written automatically to vicewin.log.
+## Launch a package
 
-Credits & Acknowledgements
+1. Open `build\Release\vicewin.exe`, or run:
 
-• The initial HLE runtime scaffolding, PE64 loader foundation, and Win32 GDK shim architecture were adapted from Freminet/ScarlettX — huge thanks to Freminet for the clean-room Xbox Series X|S base that made this project possible.
+   ```powershell
+   .\scarlettx_host.exe --in-process <path-to-exe>
+   ```
 
-Legal
+2. Select an extracted package containing `MicrosoftGame.Config` and the `.exe` file.
+3. Find runtime logs and crash/IAT traces in `vicewin.log`.
 
-ViceWin is an independent, non-commercial research project exploring GPU architectures and binary/shader translation. This repository contains zero copyrighted game files, decryption keys, or proprietary Microsoft/Xbox SDK binaries.
+> [!WARNING]
+> Use only game files, packages, binaries, and decryption material that you are legally
+> authorized to access and run.
+
+---
+
+## Credits
+
+The initial HLE runtime scaffolding, PE64 loader foundation, and Win32 GDK shim architecture
+were adapted from [Freminet/ScarlettX](https://github.com/Freminet/ScarlettX). Many thanks to
+Freminet for providing a clean-room Xbox Series X|S foundation.
+
+---
+
+## Legal
+
+ViceWin is an independent, non-commercial research project focused on GPU architecture and
+binary/shader translation.
+
+This repository does not contain copyrighted game files, decryption keys, or proprietary
+Microsoft/Xbox SDK binaries.
