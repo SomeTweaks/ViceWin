@@ -94,6 +94,18 @@ flowchart LR
 
 ---
 
+
+
+## what we have now
+
+| Component | Now |
+| --- | --- |
+| Grand Theft Auto VI | 1 frame then crashes |
+| nothing else rn | ¬ |
+
+
+---
+
 ## Build
 
 ```powershell
