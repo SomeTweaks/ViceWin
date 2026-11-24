@@ -96,7 +96,7 @@ flowchart LR
 
 
 
-## what we have now
+## What we have now
 
 | Component | Now |
 | --- | --- |
