@@ -4,11 +4,12 @@
 <div align="center">
 <h1> ViceWin🌴 </h1>
 </div>
+<div align="center">
 
 **Xbox Series X|S HLE compatibility layer and RDNA2 to DXIL shader recompiler for Windows**
 
 
-JOIN OUR TEAN'S DISCORD CHANNEL https://discord.gg/VDYNTQKC8
+JOIN OUR TEAM'S DISCORD CHANNEL https://discord.gg/VDYNTQKC8
 
 
 ![Windows](https://img.shields.io/badge/Platform-Windows_11_x64-0078D4?logo=windows&logoColor=white)
