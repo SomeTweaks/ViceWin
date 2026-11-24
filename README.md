@@ -4,7 +4,11 @@
 <div align="center">
 
 **Xbox Series X|S HLE compatibility layer and RDNA2 to DXIL shader recompiler for Windows**
+
+
 JOIN OUR TEAN'S DISCORD CHANNEL https://discord.gg/VDYNTQKC8
+
+
 ![Windows](https://img.shields.io/badge/Platform-Windows_11_x64-0078D4?logo=windows&logoColor=white)
 ![C++20](https://img.shields.io/badge/Language-C++20-00599C?logo=cplusplus&logoColor=white)
 ![CMake](https://img.shields.io/badge/Build-CMake_3.20+-064F8C?logo=cmake&logoColor=white)
