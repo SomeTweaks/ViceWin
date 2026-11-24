@@ -2,7 +2,7 @@
 
 
 <div align="center">
-# ViceWin🌴
+<h1> ViceWin🌴 </h1>
 </div>
 
 **Xbox Series X|S HLE compatibility layer and RDNA2 to DXIL shader recompiler for Windows**
