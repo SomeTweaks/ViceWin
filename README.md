@@ -41,10 +41,11 @@ interfaces.
 ![ViceWin telemetry status](status.png)
 
 <p align="center">
-  <img src="путь/к/Src.png" width="30%" />
-  <img src="путь/к/Src1.png" width="30%" />
-  <img src="путь/к/Src2.png" width="30%" />
+  <img src="Src.png" width="32%" />
+  <img src="Src1.png" width="32%" />
+  <img src="Src2.png" width="32%" />
 </p>
+
 
 
 ## Highlights
