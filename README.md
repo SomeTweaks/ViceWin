@@ -40,10 +40,10 @@ interfaces.
 
 ![ViceWin telemetry status](status.png)
 
-<p align="center">
-  <img src="Scr1.png" width="32%" />
+<div align="center">
+  <img src="scr1.png" width="32%" />
   <img src="Scr2.png" width="32%" />
-</p>
+</div>
 
 
 
