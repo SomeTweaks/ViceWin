@@ -45,7 +45,7 @@ interfaces.
 ---
 <div align="center">
 <h1> GAME RUNNING NOW </h1>
-!(Src.png)
+![ViceWin telemetry status](Src.png)
 !(Src1.png)
 !(Src2.png)
 
