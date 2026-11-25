@@ -45,9 +45,9 @@ interfaces.
 ---
 <div align="center">
 <h1> GAME RUNNING NOW </h1>
-(src.png)
-(src1.png)
-(src2.png)
+!(Src.png)
+!(Src1.png)
+!(Src2.png)
 
 </div>
 
