@@ -40,16 +40,12 @@ interfaces.
 
 ![ViceWin telemetry status](status.png)
 
-</div>
+<p align="center">
+  <img src="путь/к/Src.png" width="30%" />
+  <img src="путь/к/Src1.png" width="30%" />
+  <img src="путь/к/Src2.png" width="30%" />
+</p>
 
----
-<div align="center">
-<h1> GAME RUNNING NOW </h1>
-![ViceWin telemetry status](Src.png)
-!(Src1.png)
-!(Src2.png)
-
-</div>
 
 ## Highlights
 
