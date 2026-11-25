@@ -1,6 +1,3 @@
-
-
-
 <div align="center">
 <h1> ViceWin🌴 </h1>
 </div>
@@ -21,11 +18,11 @@ JOIN OUR TEAM'S DISCORD CHANNEL https://discord.gg/VDYNTQKC8
 
 </div>
 
-ViceWin is a native Windows compatibility layer for Xbox Series X|S builds. It focuses on
+ViceWin is a native Windows compatibility layer for Xbox Series X|S builds written in pure C++20. It focuses on
 translation and high-level emulation instead of full-system hardware emulation.
 
 The runtime maps Scarlett PE64 executables into host memory, intercepts Xbox-specific calls,
-and translates console APIs and shaders into native Win32, DirectX 12, and Shader Model 6.6
+and translates console APIs, audio, and shaders into native Win32, DirectX 12, and Shader Model 6.6
 interfaces.
 
 > [!NOTE]
@@ -44,17 +41,18 @@ interfaces.
   <img src="scr1.png" width="32%" />
   <img src="Scr2.png" width="32%" />
 </div>
+</div>
 
-
+---
 
 ## Highlights
 
-- **Native PE64 loading** — maps Scarlett executables with TLS and `.pdata` support
-- **High-level emulation** — Win32, audio, input, memory, and D3D12 compatibility layers
-- **Shader translation** — RDNA2 ISA to SSA to HLSL/DXIL Shader Model 6.6
-- **Runtime tracing** — automatic logging, crash reporting, and IAT traces
-- **DXC integration** — DirectX Shader Compiler with DXIL caching
-- **Lightweight architecture** — no heavy hardware emulation or proprietary game data
+- **Native PE64 loading (`vicewin_pe`, `vicewin_loader`)** — maps Scarlett executables with TLS, `.pdata`, and `MicrosoftGame.Config` parsing
+- **High-level emulation (`vicewin_hle`, `vicewin_core`)** — Win32/NT kernel shims, VEH/SEH tracing, memory management, XInput, and XAudio2
+- **Full RDNA2 → DXIL shader recompiler (`vicewin_shader`, `vicewin_pipeline`)** — RDNA2 ISA lifting to SSA and HLSL/DXIL Shader Model 6.6 with BVH/DXR support
+- **Console media & formats (`vicewin_formats`, `vicewin_game`)** — XMA2 audio decoding, BCn texture handling, SGD5 asset loaders, and CityHash
+- **D3D12 GPU translation (`vicewin_gpu`)** — command list translation, synchronization, and persistent disk DXIL caching via `IDxcCompiler3`
+- **Native GUI Launcher (`vicewin_launcher.exe`)** — Win32 + DirectX 11 + ImGui launcher with FPS limiter, V-Sync, GPU picker, live logs, and on-demand upscaler/SDK downloader (FSR / XeSS / DXC)
 
 ---
 
@@ -68,10 +66,10 @@ flowchart LR
         A3["XDAT / XBCH / FSSM"]
     end
 
-    subgraph ViceWin["ViceWin host"]
-        B1["PE64 mapper"]
+    subgraph ViceWin["ViceWin host (C++20)"]
+        B1["PE64 mapper & Loader"]
         B2["HLE runtime + VEH"]
-        B3["RDNA2 → DXIL"]
+        B3["RDNA2 → DXIL + GPU"]
     end
 
     subgraph Windows["Windows 11"]
@@ -94,19 +92,16 @@ flowchart LR
 | Language standard | C++20 |
 | Build system | CMake 3.20 or newer |
 | Graphics | DirectX 12 GPU with Shader Model 6.6 support |
-| Windows SDK | `dxcompiler.dll` and `dxil.dll` |
+| Windows SDK | `dxcompiler.dll` and `dxil.dll` (or downloaded via `vicewin_launcher.exe`) |
 
 ---
-
-
 
 ## What we have now
 
 | Component | Now |
 | --- | --- |
-| Grand Theft Auto VI | 1 frame then crashes |
-| nothing else rn | ¬ |
-
+| Grand Theft Auto VI | Boots past loading into intro cutscenes & Lucia prologue (active work on RDNA2 opcodes, texture deswizzling & async PSO compilation) |
+| Toolchain & Tests | Full C++20 codebase (`vicewin_core`, `vicewin_pe`, `vicewin_formats`, `vicewin_shader`, `vicewin_gpu`, `vicewin_hle`) + automated CTest suite |
 
 ---
 
@@ -127,13 +122,13 @@ ctest --test-dir build --output-on-failure
 
 ## Launch a package
 
-1. Open `build\Release\vicewin.exe`, or run:
+1. **Via GUI Launcher:** Open `build\Release\vicewin_launcher.exe`, select your extracted package folder (containing `MicrosoftGame.Config`) or `.exe`, configure FPS/V-Sync/upscalers, and click **Launch**.
+2. **Via CLI:**
 
    ```powershell
-   .\scarlettx_host.exe --in-process <path-to-exe>
+   .\build\Release\vicewin.exe --in-process <path-to-exe>
    ```
 
-2. Select an extracted package containing `MicrosoftGame.Config` and the `.exe` file.
 3. Find runtime logs and crash/IAT traces in `vicewin.log`.
 
 > [!WARNING]
